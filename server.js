@@ -9,7 +9,16 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // your Vite dev URL
+      "https://collection-app-fe.onrender.com", // your production FE domain
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 connectDB();
