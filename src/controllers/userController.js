@@ -84,15 +84,17 @@ const allCards = [
 ];
 
 // Get all cards (with collected state)
+
 export const getUsers = async (req, res) => {
   try {
-    // Get cards from DB
-    const dbCards = await UserCard.find();
+    const userId = req.user.userId;
+    // Get cards for this user
+    let dbCards = await UserCard.find({ userId });
 
-    // If DB empty, insert all cards initially
+    // If user has no cards, initialize all cards for this user
     if (dbCards.length === 0) {
       const createdCards = await UserCard.insertMany(
-        allCards.map((name) => ({ name, collected: false }))
+        allCards.map((name) => ({ userId, name, collected: false }))
       );
       return res.json(createdCards);
     }
@@ -104,17 +106,21 @@ export const getUsers = async (req, res) => {
 };
 
 // Update card collected state
+
 export const updateCard = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { id, collected } = req.body;
 
-    const updatedCard = await UserCard.findByIdAndUpdate(
-      id,
-      { collected },
-      { new: true }
-    );
+    // Ensure the card belongs to the user
+    const card = await UserCard.findOne({ _id: id, userId });
+    if (!card) {
+      return res.status(404).json({ message: "Card not found for this user" });
+    }
 
-    res.json(updatedCard);
+    card.collected = collected;
+    await card.save();
+    res.json(card);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
